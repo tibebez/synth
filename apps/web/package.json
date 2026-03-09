@@ -5,7 +5,8 @@
 	"scripts": {
 		"build": "vite build",
 		"serve": "vite preview",
-		"dev": "vite dev"
+		"dev": "vite dev",
+		"check-types": "tsc --noEmit"
 	},
 	"dependencies": {
 		"@ai-sdk/devtools": "^0.0.2",
@@ -14,6 +15,7 @@
 		"@base-ui/react": "^1.0.0",
 		"@polar-sh/better-auth": "catalog:",
 		"@prisma/client": "catalog:",
+		"@synth/ai": "workspace:*",
 		"@synth/auth": "workspace:*",
 		"@synth/core": "workspace:*",
 		"@synth/env": "workspace:*",
@@ -33,6 +35,7 @@
 		"next-themes": "^0.4.6",
 		"react": "19.2.3",
 		"react-dom": "19.2.3",
+		"recharts": "^3.8.0",
 		"shadcn": "^3.6.2",
 		"sonner": "^2.0.3",
 		"streamdown": "^1.6.10",
@@ -50,6 +53,7 @@
 		"@types/react": "19.2.7",
 		"@types/react-dom": "19.2.3",
 		"@vitejs/plugin-react": "^5.0.4",
+		"bun-types": "catalog:",
 		"jsdom": "^26.0.0",
 		"typescript": "catalog:",
 		"vite": "^7.0.2",

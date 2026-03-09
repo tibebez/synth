@@ -79,6 +79,7 @@ export * as mariadb from "./mariadb";
 export * as mysql from "./mysql";
 export * as neon from "./neon";
 export * from "./orchestrator";
+export * from "./utils/schema-prompt";
 export * as postgres from "./postgres";
 export * as redis from "./redis";
 export * as sqlite from "./sqlite";

@@ -1,4 +1,3 @@
-import { Database } from "bun:sqlite";
 import type {
 	FullSchemaType,
 	RawSQLiteColumn,
@@ -16,7 +15,18 @@ export async function introspectSchema(path: string): Promise<FullSchemaType> {
 		dbPath = dbPath.replace("~", homedir);
 	}
 
-	let db: Database;
+	let Database: any;
+	try {
+		// Use dynamic import and @vite-ignore so bundlers don't crash
+		const sqliteModule = await import(/* @vite-ignore */ "bun:sqlite");
+		Database = sqliteModule.Database;
+	} catch (e) {
+		throw new Error(
+			"bun:sqlite module is not available. Please ensure you are running in a Bun environment.",
+		);
+	}
+
+	let db;
 	try {
 		db = new Database(dbPath, { readonly: true });
 	} catch (error) {
