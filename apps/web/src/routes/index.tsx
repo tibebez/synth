@@ -1,15 +1,16 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Database, Loader2, Plus, Terminal } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import {
+	ArrowRight,
+	ChevronRight,
+	Database,
+	Loader2,
+	Plus,
+	Terminal,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -33,6 +34,7 @@ function HomeComponent() {
 	);
 	const [projects, setProjects] = useState<string[]>([]);
 	const [isCreating, setIsCreating] = useState(false);
+	const [showCreateForm, setShowCreateForm] = useState(false);
 	const [name, setName] = useState("");
 	const [dbType, setDbType] = useState("postgresql");
 	const [connectionUrl, setConnectionUrl] = useState("");
@@ -96,55 +98,123 @@ function HomeComponent() {
 	};
 
 	return (
-		<div className="container mx-auto max-w-5xl px-4 py-12">
-			<div className="mb-12 flex items-center justify-between">
-				<div>
-					<h1 className="font-bold text-4xl tracking-tight">Synth CLI</h1>
-					<p className="mt-2 text-muted-foreground">
-						Manage your AI-powered database projects locally.
-					</p>
-				</div>
-				<div className="flex items-center gap-2 rounded-full border bg-secondary/50 px-4 py-2">
-					<div
-						className={`h-2 w-2 rounded-full ${cliStatus === "online" ? "bg-green-500" : cliStatus === "loading" ? "bg-yellow-500" : "bg-red-500"}`}
-					/>
-					<span className="font-medium text-sm">
-						CLI: {cliStatus.charAt(0).toUpperCase() + cliStatus.slice(1)}
-					</span>
-				</div>
-			</div>
+		<div className="flex min-h-screen flex-col bg-background">
+			{/* Navigation */}
+			<header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-sm">
+				<div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-6">
+					<div className="flex items-center gap-6">
+						<Link to="/" className="flex items-center gap-2.5">
+							<div className="flex h-7 w-7 items-center justify-center rounded-md bg-foreground">
+								<Database className="h-3.5 w-3.5 text-background" />
+							</div>
+							<span className="font-semibold text-sm tracking-tight">
+								Synth
+							</span>
+						</Link>
 
-			<div className="grid gap-8 md:grid-cols-2">
-				{/* Create Project Section */}
-				<Card className="border-border shadow-md">
-					<CardHeader>
-						<CardTitle className="flex items-center gap-2">
-							<Plus className="h-5 w-5" /> Initialize Project
-						</CardTitle>
-						<CardDescription>
-							Connect your database to begin. Schema metadata will be saved
-							locally.
-						</CardDescription>
-					</CardHeader>
-					<CardContent>
-						<form onSubmit={handleCreateProject} className="space-y-4">
+						<nav className="hidden items-center gap-1 sm:flex">
+							<Link
+								to="/"
+								className="rounded-md px-3 py-1.5 font-medium text-foreground text-sm transition-colors"
+							>
+								Projects
+							</Link>
+							<Link
+								to="/ai"
+								className="rounded-md px-3 py-1.5 text-muted-foreground text-sm transition-colors hover:text-foreground"
+							>
+								AI Chat
+							</Link>
+						</nav>
+					</div>
+
+					<div className="flex items-center gap-2">
+						<ThemeToggle />
+						<div className="h-4 w-px bg-border" />
+						{/* CLI Status */}
+						<div className="flex items-center gap-2 rounded-full border px-3 py-1.5">
+							<div
+								className={`h-1.5 w-1.5 rounded-full ${
+									cliStatus === "online"
+										? "bg-emerald-500"
+										: cliStatus === "loading"
+											? "animate-pulse-subtle bg-amber-500"
+											: "bg-red-500"
+								}`}
+							/>
+							<span className="text-muted-foreground text-xs">
+								{cliStatus === "online"
+									? "CLI Connected"
+									: cliStatus === "loading"
+										? "Connecting..."
+										: "CLI Offline"}
+							</span>
+						</div>
+					</div>
+				</div>
+			</header>
+
+			{/* Main Content */}
+			<main className="mx-auto w-full max-w-5xl flex-1 px-6 py-12">
+				{/* Page Header */}
+				<div className="mb-10 flex items-end justify-between">
+					<div>
+						<h1 className="font-semibold text-2xl tracking-tight">Projects</h1>
+						<p className="mt-1 text-muted-foreground text-sm">
+							Manage your AI-powered database projects.
+						</p>
+					</div>
+					<Button
+						onClick={() => setShowCreateForm(!showCreateForm)}
+						size="sm"
+						className="h-9 gap-2 rounded-lg px-4 text-sm"
+					>
+						<Plus className="h-4 w-4" />
+						New Project
+					</Button>
+				</div>
+
+				{/* Create Project Form */}
+				{showCreateForm && (
+					<div className="mb-10 animate-fade-in rounded-xl border bg-card p-6">
+						<div className="mb-5">
+							<h2 className="font-medium text-base">Initialize Project</h2>
+							<p className="mt-1 text-muted-foreground text-sm">
+								Connect a database to introspect its schema and start exploring.
+							</p>
+						</div>
+						<form
+							onSubmit={handleCreateProject}
+							className="grid gap-5 sm:grid-cols-2"
+						>
 							<div className="space-y-2">
-								<Label htmlFor="name">Project Name</Label>
+								<Label
+									htmlFor="name"
+									className="font-medium text-muted-foreground text-xs"
+								>
+									Project Name
+								</Label>
 								<Input
 									id="name"
-									placeholder="my-cool-project"
+									placeholder="my-project"
 									value={name}
 									onChange={(e) => setName(e.target.value)}
 									required
+									className="h-10 bg-background"
 								/>
 							</div>
 							<div className="space-y-2">
-								<Label htmlFor="dbType">Database Type</Label>
+								<Label
+									htmlFor="dbType"
+									className="font-medium text-muted-foreground text-xs"
+								>
+									Database Type
+								</Label>
 								<Select
 									value={dbType}
 									onValueChange={(val) => val && setDbType(val)}
 								>
-									<SelectTrigger id="dbType">
+									<SelectTrigger id="dbType" className="h-10 bg-background">
 										<SelectValue placeholder="Select DB type" />
 									</SelectTrigger>
 									<SelectContent>
@@ -154,94 +224,124 @@ function HomeComponent() {
 									</SelectContent>
 								</Select>
 							</div>
-							<div className="space-y-2">
-								<Label htmlFor="url">Connection URL</Label>
+							<div className="space-y-2 sm:col-span-2">
+								<Label
+									htmlFor="url"
+									className="font-medium text-muted-foreground text-xs"
+								>
+									Connection URL
+								</Label>
 								<Input
 									id="url"
 									placeholder="postgres://user:pass@localhost:5432/db"
 									value={connectionUrl}
 									onChange={(e) => setConnectionUrl(e.target.value)}
 									required
+									className="h-10 bg-background font-mono text-xs"
 								/>
 							</div>
-							<Button
-								type="submit"
-								className="w-full"
-								disabled={isCreating || cliStatus !== "online"}
-							>
-								{isCreating ? (
-									<>
-										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-										Connecting & Introspecting...
-									</>
-								) : (
-									"Connect & Introspect"
-								)}
-							</Button>
-							{cliStatus !== "online" && cliStatus !== "loading" && (
-								<p className="mt-2 text-center text-red-500 text-xs">
-									Please start the CLI to create projects.
-								</p>
-							)}
-						</form>
-					</CardContent>
-				</Card>
-
-				{/* Projects List Section */}
-				<div className="space-y-6">
-					<div className="flex items-center justify-between">
-						<h2 className="font-semibold text-xl">Your Projects</h2>
-						<span className="font-bold text-muted-foreground text-xs uppercase tracking-wider">
-							{projects.length} Projects
-						</span>
-					</div>
-
-					{projects.length === 0 ? (
-						<div className="flex flex-col items-center justify-center rounded-lg border border-border border-dashed bg-muted/30 p-12 text-center">
-							<Terminal className="mb-4 h-12 w-12 text-muted-foreground/30" />
-							<p className="text-muted-foreground text-sm">
-								No projects found. Create one to get started.
-							</p>
-						</div>
-					) : (
-						<div className="grid gap-4">
-							{projects.map((project) => (
-								<Card
-									key={project}
-									className="group cursor-pointer transition-all hover:border-black"
-									onClick={() =>
-										navigate({
-											to: "/$projectName",
-											params: { projectName: project },
-										})
-									}
+							<div className="flex items-center gap-3 sm:col-span-2">
+								<Button
+									type="submit"
+									size="sm"
+									className="h-9 gap-2 px-5"
+									disabled={isCreating || cliStatus !== "online"}
 								>
-									<CardContent className="flex items-center justify-between p-4">
-										<div className="flex items-center gap-4">
-											<div className="rounded-md bg-secondary p-2 transition-colors group-hover:bg-black group-hover:text-white">
-												<Database className="h-5 w-5" />
-											</div>
-											<div>
-												<h3 className="font-medium">{project}</h3>
-												<p className="text-muted-foreground text-xs">
-													Local Project
-												</p>
-											</div>
-										</div>
-										<Button
-											variant="ghost"
-											size="sm"
-											className="opacity-0 transition-opacity group-hover:opacity-100"
-										>
-											Open
-										</Button>
-									</CardContent>
-								</Card>
-							))}
+									{isCreating ? (
+										<>
+											<Loader2 className="h-3.5 w-3.5 animate-spin" />
+											Connecting...
+										</>
+									) : (
+										<>
+											Connect & Introspect
+											<ArrowRight className="h-3.5 w-3.5" />
+										</>
+									)}
+								</Button>
+								<Button
+									type="button"
+									variant="ghost"
+									size="sm"
+									className="h-9 text-muted-foreground"
+									onClick={() => setShowCreateForm(false)}
+								>
+									Cancel
+								</Button>
+								{cliStatus !== "online" && cliStatus !== "loading" && (
+									<p className="text-red-500 text-xs">
+										Start the CLI first to create projects.
+									</p>
+								)}
+							</div>
+						</form>
+					</div>
+				)}
+
+				{/* Projects List */}
+				{projects.length === 0 ? (
+					<div className="flex animate-fade-in flex-col items-center justify-center rounded-xl border border-dashed py-20 text-center">
+						<div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full border bg-muted/50">
+							<Terminal className="h-5 w-5 text-muted-foreground" />
 						</div>
-					)}
+						<h3 className="font-medium text-foreground text-sm">
+							No projects yet
+						</h3>
+						<p className="mt-1.5 max-w-[280px] text-muted-foreground text-sm">
+							Create a project to connect a database and start exploring its
+							schema.
+						</p>
+						{!showCreateForm && (
+							<Button
+								variant="outline"
+								size="sm"
+								className="mt-5 h-9 gap-2 rounded-lg"
+								onClick={() => setShowCreateForm(true)}
+							>
+								<Plus className="h-3.5 w-3.5" />
+								Create your first project
+							</Button>
+						)}
+					</div>
+				) : (
+					<div className="stagger-children space-y-2">
+						{projects.map((project) => (
+							<button
+								type="button"
+								key={project}
+								className="group flex w-full items-center justify-between rounded-lg border bg-card p-4 text-left transition-all hover:border-foreground/20 hover:bg-accent/50"
+								onClick={() =>
+									navigate({
+										to: "/$projectName",
+										params: { projectName: project },
+									})
+								}
+							>
+								<div className="flex items-center gap-4">
+									<div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted transition-colors group-hover:bg-foreground group-hover:text-background">
+										<Database className="h-4 w-4" />
+									</div>
+									<div>
+										<h3 className="font-medium text-sm">{project}</h3>
+										<p className="text-muted-foreground text-xs">
+											Local Project
+										</p>
+									</div>
+								</div>
+								<ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100" />
+							</button>
+						))}
+					</div>
+				)}
+			</main>
+
+			{/* Footer */}
+			<footer className="border-t">
+				<div className="mx-auto flex h-12 max-w-5xl items-center justify-between px-6 text-muted-foreground text-xs">
+					<span>Synth CLI</span>
+					<span>localhost:4000</span>
 				</div>
-			</div>
+			</footer>
 		</div>
 	);
 }
