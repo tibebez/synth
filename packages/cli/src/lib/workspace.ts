@@ -32,7 +32,7 @@ export async function readProjectConfig(projectName: string) {
 	try {
 		const data = await fs.readFile(configPath, "utf-8");
 		return JSON.parse(data);
-	} catch (error) {
+	} catch (_error) {
 		return null;
 	}
 }

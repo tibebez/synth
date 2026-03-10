@@ -3,9 +3,9 @@ import { consola } from "consola";
 import { execa } from "execa";
 import open from "open";
 import { startApiServer } from "../api";
-import { ensureProjectDir, getProjectDir, SYNTH_ROOT } from "../lib/workspace";
+import { ensureProjectDir, SYNTH_ROOT } from "../lib/workspace";
 
-export async function startCommand(projectName: string, options: any) {
+export async function startCommand(projectName: string, _options: any) {
 	try {
 		consola.start(`Starting synth project: ${projectName}`);
 
@@ -18,7 +18,7 @@ export async function startCommand(projectName: string, options: any) {
 		const webPort = 3000;
 
 		// 3. Start API Server
-		const apiServer = startApiServer(apiPort);
+		const _apiServer = startApiServer(apiPort);
 		consola.success(`API server started on http://localhost:${apiPort}`);
 
 		// 4. Start Web App
