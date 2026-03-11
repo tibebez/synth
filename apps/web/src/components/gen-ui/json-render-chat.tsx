@@ -1,6 +1,13 @@
 "use client";
 
-import { useUIStream, Renderer, StateProvider, ActionProvider, VisibilityProvider, ValidationProvider } from "@json-render/react";
+import {
+	ActionProvider,
+	Renderer,
+	StateProvider,
+	useUIStream,
+	ValidationProvider,
+	VisibilityProvider,
+} from "@json-render/react";
 import { Code, MessageSquare, SendIcon, SparklesIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -50,7 +57,7 @@ export function JsonRenderChat({ schema: _schema }: JsonRenderChatProps) {
 					<h3 className="font-medium text-sm">Chat</h3>
 					<div className="ml-auto">
 						<span
-							className={`rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider ${
+							className={`rounded-full px-2 py-0.5 font-medium text-[10px] uppercase tracking-wider ${
 								isStreaming
 									? "bg-yellow-500/20 text-yellow-500"
 									: "bg-emerald-500/20 text-emerald-500"
@@ -80,7 +87,7 @@ export function JsonRenderChat({ schema: _schema }: JsonRenderChatProps) {
 						)}
 
 						{error && (
-							<div className="rounded-xl border border-red-500/50 bg-red-500/10 px-4 py-3 text-sm text-red-500">
+							<div className="rounded-xl border border-red-500/50 bg-red-500/10 px-4 py-3 text-red-500 text-sm">
 								Error: {error.message}
 							</div>
 						)}
@@ -144,16 +151,22 @@ export function JsonRenderChat({ schema: _schema }: JsonRenderChatProps) {
 						<div className="w-full max-w-2xl rounded-xl border bg-card p-6 shadow-sm">
 							<StateProvider initialState={{}}>
 								<VisibilityProvider>
-									<ActionProvider handlers={{
-										submit: (_params) => {
-											// Handle submit action
-										},
-										navigate: (_params) => {
-											// Handle navigate action
-										},
-									}}>
+									<ActionProvider
+										handlers={{
+											submit: (_params) => {
+												// Handle submit action
+											},
+											navigate: (_params) => {
+												// Handle navigate action
+											},
+										}}
+									>
 										<ValidationProvider customFunctions={{}}>
-											<Renderer spec={spec} registry={registry} loading={isStreaming} />
+											<Renderer
+												spec={spec}
+												registry={registry}
+												loading={isStreaming}
+											/>
 										</ValidationProvider>
 									</ActionProvider>
 								</VisibilityProvider>

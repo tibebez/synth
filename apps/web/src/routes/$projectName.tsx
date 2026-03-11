@@ -7,11 +7,11 @@ import {
 	Sparkles,
 	Table2,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { CliOfflinePage } from "@/components/cli-offline-page";
+import { JsonRenderChat } from "@/components/gen-ui/json-render-chat";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { JsonRenderChat } from "@/components/gen-ui/json-render-chat";
-import { CliOfflinePage } from "@/components/cli-offline-page";
 
 export const Route = createFileRoute("/$projectName")({
 	component: ProjectDashboard,
@@ -22,7 +22,9 @@ const CLI_URL = "http://localhost:4000";
 function ProjectDashboard() {
 	const { projectName } = Route.useParams();
 	const [activeTab, setActiveTab] = useState<"database" | "ai">("database");
-	const [cliStatus, setCliStatus] = useState<"loading" | "online" | "offline">("loading");
+	const [cliStatus, setCliStatus] = useState<"loading" | "online" | "offline">(
+		"loading",
+	);
 
 	useEffect(() => {
 		checkCli();
@@ -31,8 +33,8 @@ function ProjectDashboard() {
 	const checkCli = async () => {
 		setCliStatus("loading");
 		try {
-			const res = await fetch(`${CLI_URL}/api/health`, { 
-				signal: AbortSignal.timeout(5000)
+			const res = await fetch(`${CLI_URL}/api/health`, {
+				signal: AbortSignal.timeout(5000),
 			});
 			if (res.ok) {
 				setCliStatus("online");

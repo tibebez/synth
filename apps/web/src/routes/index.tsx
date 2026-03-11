@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { CliOfflinePage } from "@/components/cli-offline-page";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +21,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { CliOfflinePage } from "@/components/cli-offline-page";
 
 export const Route = createFileRoute("/")({
 	component: HomeComponent,
@@ -48,8 +48,8 @@ function HomeComponent() {
 	const checkCli = async () => {
 		setCliStatus("loading");
 		try {
-			const res = await fetch(`${CLI_URL}/api/health`, { 
-				signal: AbortSignal.timeout(5000) // 5 second timeout
+			const res = await fetch(`${CLI_URL}/api/health`, {
+				signal: AbortSignal.timeout(5000), // 5 second timeout
 			});
 			if (res.ok) {
 				setCliStatus("online");

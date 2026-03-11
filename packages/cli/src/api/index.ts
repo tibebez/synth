@@ -1,15 +1,15 @@
 import "dotenv/config";
 import fs from "node:fs/promises";
-import { unifiedIntrospect, schemaToPrompt } from "@synth/core";
-import { consola } from "consola";
-import { Hono } from "hono";
-import { cors } from "hono/cors";
 import { google } from "@ai-sdk/google";
-import { streamText } from "ai";
-import { z } from "zod";
 import { defineCatalog } from "@json-render/core";
 import { schema } from "@json-render/react/schema";
 import { shadcnComponentDefinitions } from "@json-render/shadcn/catalog";
+import { schemaToPrompt, unifiedIntrospect } from "@synth/core";
+import { streamText } from "ai";
+import { consola } from "consola";
+import { Hono } from "hono";
+import { cors } from "hono/cors";
+import { z } from "zod";
 import {
 	ensureProjectDir,
 	getProjectSchemaPath,
@@ -190,17 +190,17 @@ app.post("/api/ai-json-render", async (c) => {
 		const prompt = body.prompt;
 
 		if (!prompt) {
-			return c.json(
-				{ error: "No prompt provided in request body." },
-				400,
-			);
+			return c.json({ error: "No prompt provided in request body." }, 400);
 		}
 
 		// Check if API key is available
 		const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 		if (!apiKey) {
 			return c.json(
-				{ error: "API key not configured. Please set GOOGLE_GENERATIVE_AI_API_KEY environment variable." },
+				{
+					error:
+						"API key not configured. Please set GOOGLE_GENERATIVE_AI_API_KEY environment variable.",
+				},
 				500,
 			);
 		}

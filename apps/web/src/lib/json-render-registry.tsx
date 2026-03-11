@@ -1,10 +1,10 @@
 "use client";
 
 import { defineCatalog } from "@json-render/core";
-import { schema } from "@json-render/react/schema";
-import { shadcnComponentDefinitions } from "@json-render/shadcn/catalog";
 import { defineRegistry } from "@json-render/react";
+import { schema } from "@json-render/react/schema";
 import { shadcnComponents } from "@json-render/shadcn";
+import { shadcnComponentDefinitions } from "@json-render/shadcn/catalog";
 
 // Define the catalog with shadcn/ui component definitions
 // This maps JSON schema definitions to component specifications

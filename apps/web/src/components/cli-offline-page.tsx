@@ -15,7 +15,7 @@ export function CliOfflinePage({ onRetry }: CliOfflinePageProps) {
 				</div>
 
 				{/* Error Message */}
-				<h1 className="mb-2 font-semibold text-2xl tracking-tight text-foreground">
+				<h1 className="mb-2 font-semibold text-2xl text-foreground tracking-tight">
 					CLI Offline
 				</h1>
 				<p className="mb-6 text-muted-foreground text-sm leading-relaxed">
@@ -30,14 +30,19 @@ export function CliOfflinePage({ onRetry }: CliOfflinePageProps) {
 				<div className="mb-8 w-full rounded-lg border bg-card p-4 text-left">
 					<div className="mb-3 flex items-center gap-2">
 						<Terminal className="h-4 w-4 text-muted-foreground" />
-						<h3 className="font-medium text-xs uppercase tracking-wider text-muted-foreground">
+						<h3 className="font-medium text-muted-foreground text-xs uppercase tracking-wider">
 							Troubleshooting
 						</h3>
 					</div>
-					<ol className="space-y-2 text-sm text-muted-foreground">
+					<ol className="space-y-2 text-muted-foreground text-sm">
 						<li className="flex gap-2">
 							<span className="font-mono text-foreground/60">1.</span>
-							<span>Start the CLI by running: <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">synth</code></span>
+							<span>
+								Start the CLI by running:{" "}
+								<code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">
+									synth
+								</code>
+							</span>
 						</li>
 						<li className="flex gap-2">
 							<span className="font-mono text-foreground/60">2.</span>
