@@ -4,12 +4,21 @@ import { google } from "@ai-sdk/google";
 import { defineCatalog } from "@json-render/core";
 import { schema } from "@json-render/react/schema";
 import { shadcnComponentDefinitions } from "@json-render/shadcn/catalog";
-import { schemaToPrompt, unifiedIntrospect } from "@synth/core";
+import { unifiedIntrospect } from "@synth/core";
 import { streamText } from "ai";
 import { consola } from "consola";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { z } from "zod";
+import {
+	appendMessage,
+	type ConversationMessage,
+	createConversation,
+	deleteConversation,
+	getConversation,
+	listConversations,
+	updateConversationMetadata,
+} from "../lib/conversations";
 import {
 	ensureProjectDir,
 	getProjectSchemaPath,
@@ -164,7 +173,11 @@ app.post("/api/validate-db", async (c) => {
 
 app.post("/api/validate-ai", async (c) => {
 	const body = await c.req.json();
-	const { provider, model, apiKey } = z
+	const {
+		provider,
+		model,
+		apiKey: _apiKey,
+	} = z
 		.object({
 			provider: z.string(),
 			model: z.string(),
@@ -188,14 +201,15 @@ app.post("/api/ai-json-render", async (c) => {
 	try {
 		const body = await c.req.json();
 		const prompt = body.prompt;
+		const projectName = body.projectName;
+		const conversationId = body.conversationId;
 
 		if (!prompt) {
 			return c.json({ error: "No prompt provided in request body." }, 400);
 		}
 
 		// Check if API key is available
-		const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-		if (!apiKey) {
+		if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
 			return c.json(
 				{
 					error:
@@ -203,6 +217,20 @@ app.post("/api/ai-json-render", async (c) => {
 				},
 				500,
 			);
+		}
+
+		// Load conversation history if provided
+		let conversationContext = "";
+		if (projectName && conversationId) {
+			const conversation = await getConversation(projectName, conversationId);
+			if (conversation && conversation.messages.length > 0) {
+				// Get last 10 messages for context
+				const recentMessages = conversation.messages.slice(-10);
+				const historyText = recentMessages
+					.map((m) => `${m.role}: ${m.content}`)
+					.join("\n");
+				conversationContext = `\n\nCONVERSATION HISTORY:\n${historyText}\n`;
+			}
 		}
 
 		// Generate system prompt from catalog
@@ -217,10 +245,14 @@ app.post("/api/ai-json-render", async (c) => {
 			],
 		});
 
+		const enhancedPrompt = conversationContext
+			? `${conversationContext}\nCurrent user request: ${prompt}`
+			: prompt;
+
 		const result = streamText({
 			model: google("gemini-2.5-flash"),
 			system: systemPrompt,
-			prompt,
+			prompt: enhancedPrompt,
 		});
 
 		return result.toTextStreamResponse();
@@ -233,6 +265,115 @@ app.post("/api/ai-json-render", async (c) => {
 			},
 			500,
 		);
+	}
+});
+
+// Conversation endpoints
+
+app.get("/api/conversations/:projectName", async (c) => {
+	const projectName = c.req.param("projectName");
+	try {
+		const conversations = await listConversations(projectName);
+		return c.json({ success: true, conversations });
+	} catch (error: any) {
+		return c.json({ success: false, error: error.message }, 500);
+	}
+});
+
+app.get("/api/conversations/:projectName/:id", async (c) => {
+	const projectName = c.req.param("projectName");
+	const conversationId = c.req.param("id");
+	try {
+		const conversation = await getConversation(projectName, conversationId);
+		if (!conversation) {
+			return c.json({ success: false, error: "Conversation not found" }, 404);
+		}
+		return c.json({ success: true, conversation });
+	} catch (error: any) {
+		return c.json({ success: false, error: error.message }, 500);
+	}
+});
+
+app.post("/api/conversations/:projectName", async (c) => {
+	const projectName = c.req.param("projectName");
+	const body = await c.req.json();
+	const schema_validator = z.object({
+		title: z.string().optional(),
+		schema: z.object({
+			tables: z.array(z.any()),
+			relationships: z.array(z.any()),
+		}),
+	});
+
+	try {
+		const { title, schema } = schema_validator.parse(body);
+		consola.info(`Creating conversation for project: ${projectName}`);
+		const conversation = await createConversation(projectName, {
+			title,
+			schema,
+		});
+		consola.success(`Conversation created: ${conversation.metadata.id}`);
+		return c.json({ success: true, conversation });
+	} catch (error: any) {
+		consola.error("Conversation creation error:", error);
+		return c.json({ success: false, error: error.message }, 400);
+	}
+});
+
+app.put("/api/conversations/:projectName/:id", async (c) => {
+	const projectName = c.req.param("projectName");
+	const conversationId = c.req.param("id");
+	const body = await c.req.json();
+	const schema_validator = z.object({
+		title: z.string().optional(),
+		schema: z
+			.object({
+				tables: z.array(z.any()),
+				relationships: z.array(z.any()),
+			})
+			.optional(),
+	});
+
+	try {
+		const metadata = schema_validator.parse(body);
+		await updateConversationMetadata(projectName, conversationId, metadata);
+		const conversation = await getConversation(projectName, conversationId);
+		return c.json({ success: true, conversation });
+	} catch (error: any) {
+		return c.json({ success: false, error: error.message }, 400);
+	}
+});
+
+app.post("/api/conversations/:projectName/:id/messages", async (c) => {
+	const projectName = c.req.param("projectName");
+	const conversationId = c.req.param("id");
+	const body = await c.req.json();
+	const schema_validator = z.object({
+		role: z.enum(["user", "assistant", "system"]),
+		content: z.string(),
+	});
+
+	try {
+		const message = schema_validator.parse(body);
+		await appendMessage(projectName, conversationId, {
+			...message,
+			timestamp: new Date().toISOString(),
+		} as ConversationMessage);
+		const conversation = await getConversation(projectName, conversationId);
+		return c.json({ success: true, conversation });
+	} catch (error: any) {
+		return c.json({ success: false, error: error.message }, 400);
+	}
+});
+
+app.delete("/api/conversations/:projectName/:id", async (c) => {
+	const projectName = c.req.param("projectName");
+	const conversationId = c.req.param("id");
+	try {
+		await deleteConversation(projectName, conversationId);
+		return c.json({ success: true });
+	} catch (error: any) {
+		return c.json({ success: false, error: error.message }, 500);
 	}
 });
 
