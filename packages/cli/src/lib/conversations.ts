@@ -17,6 +17,7 @@ export interface ConversationMetadata {
 	createdAt: string;
 	updatedAt: string;
 	schema: FullSchemaType;
+	lastGeneratedUiJson?: unknown;
 	lastMessageSummary?: string;
 	messageCount: number;
 }
@@ -170,6 +171,9 @@ export async function updateConversationMetadata(
 	}
 	if (metadata.schema !== undefined) {
 		conversation.metadata.schema = metadata.schema;
+	}
+	if (metadata.lastGeneratedUiJson !== undefined) {
+		conversation.metadata.lastGeneratedUiJson = metadata.lastGeneratedUiJson;
 	}
 
 	conversation.metadata.updatedAt = new Date().toISOString();

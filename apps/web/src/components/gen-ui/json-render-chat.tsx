@@ -16,6 +16,7 @@ import {
 	Plus,
 	SendIcon,
 	SparklesIcon,
+	Trash2,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ interface JsonRenderChatProps {
 		title: string;
 		messageCount: number;
 		updatedAt: string;
+		lastGeneratedUiJson?: unknown;
 	}>;
 	onConversationChange?: (conversationId: string | undefined) => void;
 	onNewMessage?: () => void;
@@ -51,6 +53,8 @@ export function JsonRenderChat({
 	const [messages, setMessages] = useState<
 		Array<{ role: string; content: string }>
 	>([]);
+	const [storedSpec, setStoredSpec] = useState<unknown>(null);
+	const lastPersistedSpecRef = useRef<string | null>(null);
 	const scrollRef = useRef<HTMLDivElement>(null);
 
 	// CLI API URL
@@ -77,6 +81,9 @@ export function JsonRenderChat({
 
 	// Load conversation messages when conversationId changes
 	useEffect(() => {
+		clear();
+		lastPersistedSpecRef.current = null;
+
 		if (conversationId) {
 			// Load existing conversation messages
 			fetch(`${CLI_URL}/api/conversations/${projectName}/${conversationId}`)
@@ -84,6 +91,9 @@ export function JsonRenderChat({
 				.then((data) => {
 					if (data.success && data.conversation) {
 						setMessages(data.conversation.messages || []);
+						setStoredSpec(
+							data.conversation.metadata?.lastGeneratedUiJson ?? null,
+						);
 					}
 				})
 				.catch((err) =>
@@ -92,8 +102,32 @@ export function JsonRenderChat({
 		} else {
 			// Clear messages when starting new conversation
 			setMessages([]);
+			setStoredSpec(null);
 		}
-	}, [conversationId, projectName, CLI_URL]);
+	}, [conversationId, projectName, CLI_URL, clear]);
+
+	// Persist the newest generated UI JSON on the active conversation.
+	useEffect(() => {
+		if (!conversationId || isStreaming || !spec) return;
+
+		const serializedSpec = JSON.stringify(spec);
+		if (lastPersistedSpecRef.current === serializedSpec) {
+			return;
+		}
+
+		lastPersistedSpecRef.current = serializedSpec;
+		setStoredSpec(spec);
+
+		fetch(`${CLI_URL}/api/conversations/${projectName}/${conversationId}`, {
+			method: "PUT",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				lastGeneratedUiJson: spec,
+			}),
+		}).catch((err) =>
+			console.error("Failed to persist generated UI JSON:", err),
+		);
+	}, [conversationId, isStreaming, spec, projectName, CLI_URL]);
 
 	const handleBackToList = () => {
 		setShowList(true);
@@ -108,8 +142,41 @@ export function JsonRenderChat({
 	const handleNewConversation = () => {
 		setConversationId(undefined);
 		setMessages([]);
+		setStoredSpec(null);
+		clear();
 		setShowList(false);
 		onConversationChange?.(undefined);
+	};
+
+	const handleDeleteConversation = async (id: string) => {
+		if (!window.confirm("Delete this conversation?")) return;
+
+		try {
+			const res = await fetch(
+				`${CLI_URL}/api/conversations/${projectName}/${id}`,
+				{
+					method: "DELETE",
+				},
+			);
+
+			if (!res.ok) {
+				console.error("Failed to delete conversation", await res.text());
+				return;
+			}
+
+			if (conversationId === id) {
+				setConversationId(undefined);
+				setMessages([]);
+				setStoredSpec(null);
+				lastPersistedSpecRef.current = null;
+				clear();
+				onConversationChange?.(undefined);
+			}
+
+			onLoadConversations?.();
+		} catch (error) {
+			console.error("Error deleting conversation:", error);
+		}
 	};
 
 	const handleSubmit = async (e: React.FormEvent) => {
@@ -177,7 +244,10 @@ export function JsonRenderChat({
 				if (convData.success && convData.conversation) {
 					const recentMessages = convData.conversation.messages
 						.slice(-6)
-						.map((m: any) => `${m.role}: ${m.content}`)
+						.map(
+							(m: { role: string; content: string }) =>
+								`${m.role}: ${m.content}`,
+						)
 						.join("\n");
 					if (recentMessages) {
 						enhancedPrompt = `Previous conversation:\n${recentMessages}\n\nCurrent request: ${text}`;
@@ -191,6 +261,8 @@ export function JsonRenderChat({
 		send(enhancedPrompt);
 		setInput("");
 	};
+
+	const previewSpec = spec ?? storedSpec;
 
 	return (
 		<div className="flex h-full w-full">
@@ -230,33 +302,54 @@ export function JsonRenderChat({
 									</Button>
 								</div>
 							) : (
-								<div className="space-y-1">
-									{conversations
-										.filter((conv) => conv && conv.id)
-										.map((conv) => (
-											<button
+								<div className="space-y-1 px-1">
+									{conversations.map((conv) => {
+										const isActive = conversationId === conv.id;
+										return (
+											<div
 												key={conv.id}
-												type="button"
-												onClick={() => handleSelectConversation(conv.id)}
-												className={`w-full rounded-lg px-3 py-2.5 text-left transition-all ${
-													conversationId === conv.id
-														? "bg-accent text-foreground shadow-sm"
-														: "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+												className={`group relative flex items-center rounded-lg transition-all duration-200 ${
+													isActive
+														? "bg-accent/60 text-foreground ring-1 ring-border/50"
+														: "text-muted-foreground hover:bg-accent/40 hover:text-foreground"
 												}`}
 											>
-												<div className="truncate font-medium text-xs">
-													{conv.title}
-												</div>
-												<div className="mt-1.5 flex items-center justify-between">
-													<span className="text-[10px] opacity-50">
-														{conv.messageCount} messages
-													</span>
-													<span className="text-[10px] opacity-50">
+												<button
+													type="button"
+													onClick={() => handleSelectConversation(conv.id)}
+													className="min-w-0 flex-1 px-3 py-3 text-left"
+												>
+													<div className="truncate font-medium text-[13px] tracking-tight">
+														{conv.title}
+													</div>
+													<div className="mt-1 flex items-center gap-2 text-[10px] opacity-60">
+														<span>{conv.messageCount} messages</span>
+													</div>
+												</button>
+
+												<div className="flex flex-col items-end gap-1 px-3 py-3 text-right">
+													<span className="text-[10px] opacity-40 group-hover:hidden">
 														{new Date(conv.updatedAt).toLocaleDateString()}
 													</span>
+													<div className="hidden transition-all duration-200 group-hover:flex">
+														<Button
+															type="button"
+															variant="ghost"
+															size="icon"
+															className="h-6 w-6 rounded-md hover:bg-destructive/10 hover:text-destructive"
+															onClick={(e) => {
+																e.stopPropagation();
+																handleDeleteConversation(conv.id);
+															}}
+															aria-label={`Delete conversation ${conv.title}`}
+														>
+															<Trash2 className="h-3.5 w-3.5" />
+														</Button>
+													</div>
 												</div>
-											</button>
-										))}
+											</div>
+										);
+									})}
 								</div>
 							)}
 						</div>
@@ -309,7 +402,7 @@ export function JsonRenderChat({
 									</div>
 								)}
 
-								{messages.map((msg, idx) => (
+								{messages.map((msg) => (
 									<div
 										key={msg.content.slice(0, 30)}
 										className={`flex ${
@@ -384,14 +477,31 @@ export function JsonRenderChat({
 						variant="outline"
 						size="sm"
 						className="h-7 gap-1.5 rounded-lg border-dashed px-3 text-[11px]"
-						onClick={() => clear()}
+						onClick={() => {
+							clear();
+							setStoredSpec(null);
+							lastPersistedSpecRef.current = null;
+
+							if (conversationId) {
+								fetch(
+									`${CLI_URL}/api/conversations/${projectName}/${conversationId}`,
+									{
+										method: "PUT",
+										headers: { "Content-Type": "application/json" },
+										body: JSON.stringify({ lastGeneratedUiJson: null }),
+									},
+								).catch((err) =>
+									console.error("Failed to clear generated UI JSON:", err),
+								);
+							}
+						}}
 					>
 						<Code className="h-3 w-3" />
 						Clear
 					</Button>
 				</div>
 				<div className="flex flex-1 flex-col overflow-y-auto p-6">
-					{spec ? (
+					{previewSpec ? (
 						<div className="w-full rounded-xl border bg-card p-6 shadow-sm">
 							<StateProvider initialState={{}}>
 								<VisibilityProvider>
@@ -407,7 +517,9 @@ export function JsonRenderChat({
 									>
 										<ValidationProvider customFunctions={{}}>
 											<Renderer
-												spec={spec}
+												spec={
+													previewSpec as Parameters<typeof Renderer>[0]["spec"]
+												}
 												registry={registry}
 												loading={isStreaming}
 											/>

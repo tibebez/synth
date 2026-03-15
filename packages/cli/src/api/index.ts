@@ -332,6 +332,7 @@ app.put("/api/conversations/:projectName/:id", async (c) => {
 				relationships: z.array(z.any()),
 			})
 			.optional(),
+		lastGeneratedUiJson: z.unknown().optional(),
 	});
 
 	try {
